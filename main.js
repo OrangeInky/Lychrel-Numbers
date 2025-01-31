@@ -3,8 +3,7 @@ function stringRev(str) {
 }
 
 function digitRev(num) {
-    str = num.toString();
-    return Number(stringRev(str));
+    return Number(stringRev(num.toString()));
 }
 
 function addDigitRev(num) {
