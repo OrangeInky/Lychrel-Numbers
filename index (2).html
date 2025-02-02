@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palindrome Quest</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ff7c5c;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #004cff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #002885;
+        }
+
+        #animation {
+            height: 600px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: white;
+            overflow-y: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .step {
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #e8f4ff;
+            border-radius: 4px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .final-result {
+            background-color: #e8ffe8;
+            padding: 15px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="control-group">
+            <label>Starting Number:</label>
+            <input type="text" id="numberInput" value="196">
+        </div>
+        <div class="control-group">
+            <label>Base (2-36):</label>
+            <input type="number" id="baseInput" value="10" min="2" max="36">
+        </div>
+        <div class="control-group">
+            <label>Speed (ms):</label>
+            <input type="number" id="speedInput" value="500" min="100" step="100">
+        </div>
+        <div class="control-group">
+            <label>Max Steps:</label>
+            <input type="number" id="stepsInput" value="100" min="1">
+        </div>
+        <div class="control-group">
+            <label>Actions:</label>
+            <button id="startBtn">Start</button>
+            <button id="stopBtn">Stop</button>
+        </div>
+    </div>
+
+    <div id="animation"></div>
+
+    <script>
+        let isRunning = false;
+
+        function parseBigInt(str, base) {
+            const validDigits = '0123456789abcdefghijklmnopqrstuvwxyz'.substring(0, base);
+            const cleanStr = str.toLowerCase().replace(/^-/, '');
+            
+            if(!cleanStr.split('').every(c => validDigits.includes(c))) {
+                throw new Error('Invalid characters for base');
+            }
+            
+            return BigInt(cleanStr.split('').reverse().reduce((acc, c, idx) => {
+                return acc + BigInt(parseInt(c, base)) * (BigInt(base) ** BigInt(idx));
+            }, 0n)) * BigInt(str.startsWith('-') ? -1 : 1);
+        }
+
+        function stringRev(str) {
+            return str.split("").reverse().join("");
+        }
+
+        function digitRev(num, base) {
+            const numStr = num.toString(base);
+            return parseBigInt(stringRev(numStr), base);
+        }
+
+        function isPalindrome(num, base) {
+            const numStr = num.toString(base);
+            return numStr === stringRev(numStr);
+        }
+
+        function addStep(animationDiv, content, isFinal = false) {
+            const step = document.createElement('div');
+            step.className = isFinal ? 'final-result' : 'step';
+            step.textContent = content;
+            animationDiv.appendChild(step);
+            animationDiv.scrollTop = animationDiv.scrollHeight;
+        }
+
+        async function runPalindromeQuest(seed, speed, maxSteps, base) {
+            const animationDiv = document.getElementById('animation');
+            animationDiv.innerHTML = '';
+            let currentNumber = seed;
+            let steps = 0;
+
+            while (isRunning && steps < maxSteps) {
+                if (isPalindrome(currentNumber, base)) {
+                    addStep(animationDiv, `🎉 Palindrome found in ${steps} steps: ${currentNumber.toString(base)} (base ${base})`, true);
+                    return;
+                }
+
+                const reversed = digitRev(currentNumber, base);
+                const sum = currentNumber + reversed;
+                
+                addStep(animationDiv, `Step ${steps + 1}:
+                    ${currentNumber.toString(base)} (base ${base}) + 
+                    ${reversed.toString(base)} (base ${base}) = 
+                    ${sum.toString(base)} (base ${base})`
+                );
+                
+                currentNumber = sum;
+                steps++;
+                await new Promise(resolve => setTimeout(resolve, speed));
+            }
+
+            if (isRunning) {
+                addStep(animationDiv, `⚠️ Stopped after ${maxSteps} steps. Possible Lychrel number!`, true);
+            }
+        }
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            if (isRunning) return;
+            
+            try {
+                const seedStr = document.getElementById('numberInput').value;
+                const speed = parseInt(document.getElementById('speedInput').value);
+                const maxSteps = parseInt(document.getElementById('stepsInput').value);
+                const base = parseInt(document.getElementById('baseInput').value);
+
+                if (!seedStr || isNaN(base) || base < 2 || base > 36) {
+                    alert('Please check your inputs\nBase must be between 2-36');
+                    return;
+                }
+
+                const seed = parseBigInt(seedStr, base);
+                isRunning = true;
+                runPalindromeQuest(seed, speed, maxSteps, base);
+            } catch (e) {
+                alert(`Invalid number for selected base: ${e.message}`);
+                isRunning = false;
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            isRunning = false;
+        });
+    </script>
+</body>
+</html>
