@@ -105,16 +105,16 @@
         let isRunning = false;
 
         function parseBigInt(str, base) { //BigInt in base n
-            const validDigits = '0123456789abcdefghijklmnopqrstuvwxyz'.substring(0, base);
+            const validDigits = '0123456789abcdefghijklmnopqrstuvwxyz'.substring(0, base); //Use the digits up to the base
             const cleanStr = str.toLowerCase().replace(/^-/, '');
             
-            if(!cleanStr.split('').every(c => validDigits.includes(c))) {
+            if(!cleanStr.split('').every(c => validDigits.includes(c))) { //Check if every digit is in validDigits
                 throw new Error('Invalid characters for base');
             }
             
             return BigInt(cleanStr.split('').reverse().reduce((acc, c, idx) => {
-                return acc + BigInt(parseInt(c, base)) * (BigInt(base) ** BigInt(idx));
-            }, 0n)) * BigInt(str.startsWith('-') ? -1 : 1);
+                return acc + BigInt(parseInt(c, base)) * (BigInt(base) ** BigInt(idx)); //Accumulates and add the digit c in base multiplied by the base^radix.
+            }, 0n)) * BigInt(str.startsWith('-') ? -1 : 1); // Multiply by negative to handle negatives if needed
         }
 
         function stringRev(str) { //Reversing a string
